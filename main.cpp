@@ -36,10 +36,23 @@ private:
 
 int main()
 {
-    ThreadPool pool;
-    // pool.setMode(PoolMode::MODE_CACHE);
-    pool.start(4);
-#if 1
+    {
+        ThreadPool pool;
+        // pool.setMode(PoolMode::MODE_CACHE);
+        pool.start(4);
+        Result res1 = pool.submitTask(std::make_shared<MyTask>(100000001, 200000000));
+        Result res2 = pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+        
+        pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+        pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+
+        ULL sum1 = res1.get().cast_<ULL>();
+        cout << sum1 << endl;
+    }
+    
+    cout << "main over!\n";
+
+#if 0
     // 测试 Result 机制
     Result res1 = pool.submitTask(std::make_shared<MyTask>(1, 100000000));
     Result res2 = pool.submitTask(std::make_shared<MyTask>(100000001, 200000000));

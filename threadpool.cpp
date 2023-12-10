@@ -94,11 +94,11 @@ ThreadPool::~ThreadPool()
 {
     isPoolRunning_ = false;
 
-    //!NOTE: 这个顺序避免了
-    notEmpty_.notify_all();
 
     // 等待线程池里面所有的线程返回，两种状态：阻塞 | 正在执行任务中
     std::unique_lock<std::mutex> lock(taskQueMtx_);
+    //!NOTE: 这个顺序可以死锁，访问 notEmpty_ 所在线程先抢到锁 wait 之后无法被 notify
+    notEmpty_.notify_all();
     exitCond_.wait(lock, [&]() -> bool { return threads_.size() == 0; });
 }
 
@@ -236,7 +236,7 @@ void ThreadPool::threadFunc(int threadId)
             // 当前时间 - 上一次线程执行的时间 > 60s
            
             // 每一秒中返回一次，如何区分超时返回还是有任务执行返回
-            while (taskQueue_.size() == 0)
+            while (isPoolRunning_ && taskQueue_.size() == 0) // 锁 + 双重判断
             {
                 if (poolMode_ == PoolMode::MODE_CACHE)
                 {
@@ -265,14 +265,18 @@ void ThreadPool::threadFunc(int threadId)
                 }
 
                 // #1 线程池结束时回收被阻塞线程资源
-                if (!isPoolRunning_) {
-                    threads_.erase(threadId);
-                    std::cout << "~threadId: " << threadId << ' ' << std::this_thread::get_id() << " exit!\n";
-                    exitCond_.notify_all();
-                    return ;
-                }
+                // if (!isPoolRunning_) {
+                //     threads_.erase(threadId);
+                //     std::cout << "~threadId: " << threadId << ' ' << std::this_thread::get_id() << " exit!\n";
+                //     exitCond_.notify_all();
+                //     return ;
+                // }
             }
             
+            if (!isPoolRunning_) {
+                break;
+            }
+
             idleThreadSize_ --;
             std::cout << "tid: " << std::this_thread::get_id() << ", 获取成功...\n";
 
