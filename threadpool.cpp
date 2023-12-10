@@ -223,7 +223,7 @@ void ThreadPool::threadFunc(int threadId)
 {
     auto lastTime = std::chrono::high_resolution_clock().now();
 
-    while (isPoolRunning_) 
+    for (;;) 
     {
         std::shared_ptr<Task> task;
         {
@@ -236,8 +236,16 @@ void ThreadPool::threadFunc(int threadId)
             // 当前时间 - 上一次线程执行的时间 > 60s
            
             // 每一秒中返回一次，如何区分超时返回还是有任务执行返回
-            while (isPoolRunning_ && taskQueue_.size() == 0) // 锁 + 双重判断
+            while (taskQueue_.size() == 0)
             {
+                // 如果没有任务了并且池已经析构就需要回收线程，然后退出
+                if (!isPoolRunning_) {
+                    threads_.erase(threadId);
+                    std::cout << "~threadId: " << threadId << ' ' << std::this_thread::get_id() << " exit!\n";
+                    exitCond_.notify_all();
+                    return ;
+                }
+
                 if (poolMode_ == PoolMode::MODE_CACHE)
                 {
                     // 条件变量，超时返回了
@@ -263,18 +271,6 @@ void ThreadPool::threadFunc(int threadId)
                     // 只要任务队列里面没有任务就要等待 notEmpty_ 条件
                     notEmpty_.wait(lock);
                 }
-
-                // #1 线程池结束时回收被阻塞线程资源
-                // if (!isPoolRunning_) {
-                //     threads_.erase(threadId);
-                //     std::cout << "~threadId: " << threadId << ' ' << std::this_thread::get_id() << " exit!\n";
-                //     exitCond_.notify_all();
-                //     return ;
-                // }
-            }
-            
-            if (!isPoolRunning_) {
-                break;
             }
 
             idleThreadSize_ --;
@@ -304,10 +300,5 @@ void ThreadPool::threadFunc(int threadId)
         // 更新线程执行完任务的时间
         lastTime = std::chrono::high_resolution_clock().now();
     }
-    
-    // #2 正在执行任务的线程被回收
-    threads_.erase(threadId);
-    std::cout << "~threadId: " << threadId << ' ' << std::this_thread::get_id() << " exit!\n";
-    exitCond_.notify_all();
 }
 
