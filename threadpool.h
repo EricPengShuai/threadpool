@@ -80,13 +80,18 @@ class Semaphore
 public:
     Semaphore(int limit = 0)
         : resLimit_(limit)
+        , isExit_(false)
     {}
 
-    ~Semaphore() = default;
+    ~Semaphore() {
+        isExit_ = true;
+    }
 
     // 消耗一个信号量资源
     void wait()
     {
+        if (isExit_) return ; // 解决 MingGW 或者 GCC 编译器资源不释放死锁问题
+
         std::unique_lock<std::mutex> lock(mtx_);
         // 等待信号量有资源，没有资源的话，会阻塞当前线程
         cond_.wait(lock, [&]() -> bool { return resLimit_ > 0; });
@@ -96,12 +101,15 @@ public:
     // 增加一个信号量资源
     void post()
     {
+        if (isExit_) return ;
+
         std::unique_lock<std::mutex> lock(mtx_);
         resLimit_ += 1; // 增加
         cond_.notify_all();
     }
 
 private:
+    std::atomic_bool isExit_;
     int resLimit_;
     std::mutex mtx_;
     std::condition_variable cond_;
