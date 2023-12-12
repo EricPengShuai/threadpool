@@ -36,24 +36,29 @@ private:
 
 int main()
 {
+#if 1
     {
         ThreadPool pool;
-        // pool.setMode(PoolMode::MODE_CACHE);
+        // pool.setMode(PoolMode::MODE_CACHED);
         pool.start(4);
         Result res1 = pool.submitTask(std::make_shared<MyTask>(100000001, 200000000));
-        Result res2 = pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+        // Result res2 = pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
         
-        pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
-        pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+        // pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+        // pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
 
         ULL sum1 = res1.get().cast_<ULL>();
         cout << sum1 << endl;
     }
     
     cout << "main over!\n";
+#endif 
 
 #if 0
-    // 测试 Result 机制
+    // 测试 Result 机制以及 Cache 模式
+    ThreadPool pool;
+    // pool.setMode(PoolMode::MODE_CACHED);
+    pool.start(4);
     Result res1 = pool.submitTask(std::make_shared<MyTask>(1, 100000000));
     Result res2 = pool.submitTask(std::make_shared<MyTask>(100000001, 200000000));
     Result res3 = pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
@@ -74,21 +79,23 @@ int main()
     std::cout << (sum1 + sum2 + sum3) << std::endl;
 #endif
 
-#if 0 
-    // 测试基本逻辑
-    // pool.setTaskQueMaxThreshHold(3);
+#if 0
+    // 测试基本逻辑以及提交任务失败
+    ThreadPool pool;
+    pool.setTaskQueMaxThreshHold(3);
+    pool.start(4);
 
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>());
-    // pool.submitTask(std::make_shared<MyTask>()); // 提交失败
+    pool.submitTask(std::make_shared<MyTask>(0, 100000000));
+    pool.submitTask(std::make_shared<MyTask>(100000001, 200000000));
+    pool.submitTask(std::make_shared<MyTask>(200000001, 300000000));
+    pool.submitTask(std::make_shared<MyTask>(300000001, 400000000));
+    pool.submitTask(std::make_shared<MyTask>(400000001, 500000000));
+    pool.submitTask(std::make_shared<MyTask>(500000001, 600000000));
+    pool.submitTask(std::make_shared<MyTask>(600000001, 700000000));
+    pool.submitTask(std::make_shared<MyTask>(700000001, 800000000)); // 提交失败
 #endif
 
-    getchar();
+    // getchar();
 
     return 0;
 }

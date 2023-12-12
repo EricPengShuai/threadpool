@@ -115,6 +115,7 @@ private:
     std::condition_variable cond_;
 };
 
+
 // Task 类型的前置声明
 class Task;
 
@@ -164,7 +165,7 @@ private:
 // 线程池支持的模式
 enum class PoolMode {
     MODE_FIXED,  // 固定数量的线程
-    MODE_CACHE,  // 线程数量可动态增长
+    MODE_CACHED,  // 线程数量可动态增长
 };
 
 
@@ -232,6 +233,7 @@ public:
 private:
     // 定义线程函数
     void threadFunc(int threadId);
+    void threadFunc_v0(int threadId); // 线程池析构时不等待任务执行完直接退出
 
     // 检查pool的运行状态
     bool checkRunningState() const;
